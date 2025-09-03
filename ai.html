@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI by Linzzz v0.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e5ddd5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+        }
+        .chat-header {
+            background-color: #075e54;
+            color: #ffffff;
+            padding: 1rem;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            display: flex;
+            align-items: center;
+        }
+        .chat-header img {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin-right: 1rem;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            background-color: #e5ddd5;
+        }
+        .message {
+            max-width: 80%;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+        }
+        .message.user {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+            margin-left: auto;
+            text-align: right;
+            border-bottom-right-radius: 2px;
+        }
+        .message.bot {
+            background-color: #ffffff;
+            align-self: flex-start;
+            margin-right: auto;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 2px;
+        }
+        .message-timestamp {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 0.25rem;
+        }
+        .chat-input-container {
+            display: flex;
+            padding: 1rem;
+            background-color: #f0f2f5;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 0.75rem 1.25rem;
+            border-radius: 25px;
+            border: none;
+            outline: none;
+            background-color: #fff;
+            margin-right: 0.5rem;
+        }
+        .send-button {
+            background-color: #075e54;
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .send-button:hover {
+            background-color: #054a3e;
+        }
+        .typing-indicator {
+            align-self: flex-start;
+            margin-right: auto;
+            padding: 0.5rem 1rem;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="chat-container">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            <img src="https://placehold.co/100x100/A051A2/ffffff?text=AI" alt="Bot Profile">
+            <div>
+                <h3 class="text-lg font-semibold">AI by Linzzz v0.1</h3>
+                <p class="text-sm">online</p>
+            </div>
+        </div>
+
+        <!-- Chat Messages -->
+        <div id="chat-messages" class="chat-messages flex flex-col">
+            <div class="message bot">
+                <p>Halo! Saya adalah AI by Linzzz. Saya siap membantu. Apa yang ingin kamu tanyakan?</p>
+                <div class="message-timestamp">18:00</div>
+            </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="chat-input-container">
+            <input type="text" id="message-input" class="chat-input" placeholder="Ketik pesan...">
+            <button id="send-button" class="send-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15.46 22 11.23 13.77 2 18.54 22 2"></polygon>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const chatMessages = document.getElementById('chat-messages');
+        const apiKey = "";
+        let chatHistory = [];
+        let isTyping = false;
+
+        async function fetchAIResponse(userQuery) {
+            // Placeholder untuk loading indicator
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.textContent = "Mengetik...";
+            loadingIndicator.classList.add('typing-indicator');
+            chatMessages.appendChild(loadingIndicator);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                tools: [{ "google_search": {} }]
+            };
+
+            let response;
+            try {
+                response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const result = await response.json();
+                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf, saya tidak bisa menemukan jawaban.";
+                return text;
+            } catch (error) {
+                console.error('Error fetching AI response:', error);
+                return "Maaf, ada masalah saat berkomunikasi dengan AI. Silakan coba lagi.";
+            } finally {
+                // Hapus loading indicator setelah respons diterima
+                loadingIndicator.remove();
+                isTyping = false;
+            }
+        }
+
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender);
+            
+            const messageText = document.createElement('p');
+            messageText.innerHTML = text;
+            messageDiv.appendChild(messageText);
+
+            const timestamp = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const timestampSpan = document.createElement('div');
+            timestampSpan.classList.add('message-timestamp');
+            timestampSpan.textContent = timestamp;
+            messageDiv.appendChild(timestampSpan);
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            if (isTyping) return;
+            isTyping = true;
+            
+            const userText = messageInput.value.trim();
+            if (userText === '') {
+                isTyping = false;
+                return;
+            }
+
+            addMessage(userText, 'user');
+            messageInput.value = '';
+
+            const botResponse = await fetchAIResponse(userText);
+            addMessage(botResponse, 'bot');
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+
+        messageInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
